@@ -1,0 +1,15 @@
+{
+  "name": "eslint-plugin-buildium",
+  "description": "Custom eslint rules in use at Buildium",
+  "repository": "https://github.com/buildium/eslint-plugin-buildium",
+  "version": "1.0.0",
+  "main": "index.js",
+  "author": "Jeff Balboni <jeff.balboni@buildium.com>",
+  "license": "MIT",
+  "peerDependencies": {
+    "eslint": ">=0.8.0"
+  },
+  "scripts": {
+    "test": "node ./test.js"
+  }
+}
