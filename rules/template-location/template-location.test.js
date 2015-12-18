@@ -4,7 +4,7 @@ var rule = require('./template-location'),
     RuleTester = require('eslint').RuleTester;
 
 var ruleTester = new RuleTester();
-ruleTester.run('bd-template-location', rule, {
+ruleTester.run('template-location', rule, {
     valid: [
         'fs.readFileSync()'
     ],

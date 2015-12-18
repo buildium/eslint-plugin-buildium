@@ -4,7 +4,7 @@ var rule = require('./func-names'),
     RuleTester = require('eslint').RuleTester;
 
 var ruleTester = new RuleTester();
-ruleTester.run('bd-func-names', rule, {
+ruleTester.run('func-names', rule, {
     valid: [
         'function funcName() { console.log("Nope"); }',
         'var test = function funcName() { console.log("Nope"); }',

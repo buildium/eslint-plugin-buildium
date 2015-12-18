@@ -5,7 +5,7 @@ var message = 'message',
     RuleTester = require('eslint').RuleTester;
 
 var ruleTester = new RuleTester();
-ruleTester.run('bd-imports-thing', rule, {
+ruleTester.run('imports-thing', rule, {
     valid: [
         'require()',
         'require("fake")',
