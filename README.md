@@ -16,6 +16,8 @@ There are four custom rules:
     * Requires that require('lodash') is not used (should use underscore or a specific lodash function)
 * imports-jquery
     * Requires that jquery be used instead of jQuery (which causes jquery to be bundled incorrectly for us)
+* no-focused-tests
+	* Requires that no files may be checked in with fdescribe, ddescribe, fit or iit.
     
 License
 -------

@@ -3,6 +3,7 @@
 module.exports = {
     rules: {
         'func-names': require('./rules/func-names/func-names'),
+        'no-focused-tests' : require('./rules/no-focused-tests/no-focused-tests'),
         'arrow-function-callback': require('./rules/arrow-functions/arrow-functions'),
         'template-location': require('./rules/template-location/template-location'),
         'tagged-templates': require('./rules/templates/templates'),
@@ -12,6 +13,7 @@ module.exports = {
     },
     rulesConfig: {
         'func-names': 2,
+        'no-focused-tests': 2,
         'arrow-function-callback': 2,
         'template-location': 2,
         'tagged-templates': 2,
