@@ -6,15 +6,32 @@ module.exports = {
             category: 'Possible Errors',
         },
         fixable: 'code',
-        schema: [],
     },
     create: function(context) {
         const diNodes = [];
         const injectArraysByFunction = {};
 
         function report(node) {
-            context.report(node, '{{nodeName}} is not using explicit annotation and cannot be invoked in strict mode', {
-                nodeName: node.id.name
+            const nodeName = node.id.name;
+            const firstTokenInLine = context.getSourceCode()
+                .getTokensBefore(node)
+                .filter(token => token.loc.start.line === node.loc.start.line)
+                .pop() || node;
+            const startingColumn = firstTokenInLine.loc.start.column;
+            const whitespace = new Array(startingColumn + 1).join(' ');
+
+            context.report({
+                node, 
+                message: '{{ nodeName }} is not using explicit annotation and cannot be invoked in strict mode', 
+                data: {
+                    nodeName
+                },
+                fix: function(fixer) {
+                    const params = node.params.map(param => param.name);
+                    const quotedParams = params.map(param => `'${param}'`).join(', ');
+                    const injectArray = `\n${whitespace}${nodeName}.$inject = [${quotedParams}];`;
+                    return fixer.insertTextAfter(node, injectArray);
+                }
             });
         }
 

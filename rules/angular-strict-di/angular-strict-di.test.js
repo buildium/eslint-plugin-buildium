@@ -14,7 +14,11 @@ new RuleTester({
             `,
             errors: [
                 { message: new RegExp('is not using explicit annotation and cannot be invoked in strict mode') }
-            ]
+            ],
+            output: `
+            export function InvalidControllerNoInject(MyService) {}
+            InvalidControllerNoInject.$inject = ['MyService'];
+            `
         },
         {
             code: `
