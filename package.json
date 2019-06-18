@@ -2,7 +2,7 @@
   "name": "eslint-plugin-buildium",
   "description": "Custom eslint rules in use at Buildium",
   "repository": "https://github.com/buildium/eslint-plugin-buildium",
-  "version": "2.2.0-calvinmceachron.2",
+  "version": "2.2.0-calvinmceachron.3",
   "main": "index.js",
   "author": "Jeff Balboni <jeff.balboni@buildium.com>",
   "license": "MIT",
