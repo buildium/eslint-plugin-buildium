@@ -24,7 +24,7 @@ module.exports = {
         };
 
         const [ userOptions ] = context.options;
-        const ruleOptions = { ...defaultOptions, ...userOptions };
+        const ruleOptions = Object.assign({}, defaultOptions, userOptions);
 
         const diNodes = [];
         const injectArraysByFunction = {};
