@@ -105,7 +105,7 @@ module.exports = {
         }
 
         function isAngularInjectable(param) {
-            return param.startsWith('$');
+            return typeof param === 'string' && param.startsWith('$');
         }
 
         function isCustomInjectable(param) {
