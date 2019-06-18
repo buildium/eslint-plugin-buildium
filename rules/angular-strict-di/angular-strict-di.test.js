@@ -27,7 +27,40 @@ new RuleTester({
             `,
             errors: [
                 { message: new RegExp('is not using explicit annotation and cannot be invoked in strict mode') }
-            ]
+            ],
+            output: `
+            
+            export function InvalidControllerInjectComment() {}
+            InvalidControllerInjectComment.$inject = [];
+            `,
+        },
+        {
+            code: `
+            /* 
+            @ngInject 
+            */
+            export function InvalidControllerInjectBlockComment() {}
+            `,
+            errors: [
+                { message: new RegExp('is not using explicit annotation and cannot be invoked in strict mode') }
+            ],
+            output: `
+            
+            export function InvalidControllerInjectBlockComment() {}
+            InvalidControllerInjectBlockComment.$inject = [];
+            `,
+        },
+        {
+            code: `
+            export /* @ngInject */ function InvalidControllerInjectBlockComment2() {}
+            `,
+            errors: [
+                { message: new RegExp('is not using explicit annotation and cannot be invoked in strict mode') }
+            ],
+            output: `
+            export  function InvalidControllerInjectBlockComment2() {}
+            InvalidControllerInjectBlockComment2.$inject = [];
+            `,
         },
         {
             code: `

@@ -11,42 +11,57 @@ module.exports = {
         const diNodes = [];
         const injectArraysByFunction = {};
 
-        function report(node) {
-            const nodeName = node.id.name;
+        function getIndentationForNode(node) {
             const firstTokenInLine = context.getSourceCode()
                 .getTokensBefore(node)
                 .filter(token => token.loc.start.line === node.loc.start.line)
                 .pop() || node;
             const startingColumn = firstTokenInLine.loc.start.column;
-            const whitespace = new Array(startingColumn + 1).join(' ');
+            return new Array(startingColumn + 1).join(' ');
+        }
+
+        function report(node) {
+            const nodeName = node.id.name;
+            const indent = getIndentationForNode(node);
 
             context.report({
                 node, 
                 message: '{{ nodeName }} is not using explicit annotation and cannot be invoked in strict mode', 
-                data: {
-                    nodeName
-                },
+                data: { nodeName },
                 fix: function(fixer) {
                     const params = node.params.map(param => param.name);
                     const quotedParams = params.map(param => `'${param}'`).join(', ');
-                    const injectArray = `\n${whitespace}${nodeName}.$inject = [${quotedParams}];`;
-                    return fixer.insertTextAfter(node, injectArray);
+                    const injectArray = `\n${indent}${nodeName}.$inject = [${quotedParams}];`;
+                    
+                    const fixings = [];
+                    fixings.push(fixer.insertTextAfter(node, injectArray));
+
+                    const annotateComment = getNgAnnotateComment(node);
+                    if (annotateComment) {
+                        fixings.push(fixer.remove(annotateComment));
+                    }
+
+                    return fixings;
                 }
             });
         }
 
-        function hasNgAnnotateComment(node) {
+        function getNgAnnotateComment(node) {
             const sourceCode = context.getSourceCode();
             const comments = sourceCode.getAllComments();
             const annotateComments = comments.filter(comment => comment.value.trim() === '@ngInject');
 
-            const hasComment = annotateComments.some(comment => {
+            const comment = annotateComments.find(comment => {
                 const tokensBetween = sourceCode.getTokensBetween(comment, node);
                 const commentBelongsToAnother = tokensBetween.some(token => token.type === 'Keyword' && ['function', 'class'].includes(token.value));
                 return !commentBelongsToAnother;
             });
 
-            return hasComment;
+            return comment;
+        }
+
+        function hasNgAnnotateComment(node) {
+            return Boolean(getNgAnnotateComment(node));
         }
 
         function isAngularInjectable(param) {
@@ -79,7 +94,7 @@ module.exports = {
             return true;
         }
 
-        function checkNodes() {
+        function verifyDependencyInjection() {
             diNodes.forEach(node => {
                 if (!injectArrayExistsForNode(node)) {
                     report(node);
@@ -87,7 +102,7 @@ module.exports = {
             });
         }
 
-        function checkDependencyInjection(node) {
+        function checkFunctionForDependencyInjection(node) {
             const requiresAnnotation = hasNgAnnotateComment(node) || isAngularFunctionOrProvider(node);
             if (!requiresAnnotation) { return; }
 
@@ -95,8 +110,11 @@ module.exports = {
         }
 
         return {
-            FunctionDeclaration: checkDependencyInjection,
-            FunctionExpression: checkDependencyInjection,
+            // record all the functions that would require dependency injection
+            FunctionDeclaration: checkFunctionForDependencyInjection,
+            FunctionExpression: checkFunctionForDependencyInjection,
+
+            // collect all the $inject arrays found in the file
             AssignmentExpression: function(node) {
                 function isInjectArray(node) {
                     return node.left.property.name === '$inject'
@@ -108,8 +126,10 @@ module.exports = {
                     injectArraysByFunction[functionName] = node.right.elements.map(element => element.value);
                 }
             },
+
+            // assert that all functions requiring DI have matching $inject arrays
             "Program:exit": function() {
-                checkNodes();
+                verifyDependencyInjection();
             },
         }
     }
