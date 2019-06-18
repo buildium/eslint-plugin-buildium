@@ -99,7 +99,7 @@ module.exports = {
 
         function injectArrayMatchesNodeParams(injectArray, node) {
             const params = node.params.map(param => param.name);
-            if (!(injectArray.length === params.length)) { return false; }
+            if (injectArray.length !== params.length) { return false; }
             
             const paramsAreMatching = params.every((param, index) => param === injectArray[index]);
             if (!paramsAreMatching) { return false; }
