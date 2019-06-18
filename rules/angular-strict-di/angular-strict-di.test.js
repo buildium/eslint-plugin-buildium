@@ -91,6 +91,17 @@ new RuleTester({
             errors: [
                 { message: new RegExp('is not using explicit annotation and cannot be invoked in strict mode') }
             ]
+        },
+        {
+            code: `
+                const route = {
+                    resolve: ['$http', '$q', function routeResolve($http, $q) {
+                    }]
+                }
+            `,
+            errors: [
+                { message: new RegExp('is not using explicit annotation and cannot be invoked in strict mode') }
+            ]
         }
     ],
 
@@ -122,6 +133,15 @@ new RuleTester({
                 };
                 ValidControllerWithInjectable.$inject = ['MyService'];
             `,
+        },
+        {
+            code: `
+                const route = {
+                    resolve: ['$http', '$q', function routeResolve($http, $q) {
+                    }]
+                }
+            `,
+            options: [{ inlineArray: true }]
         }
     ],
 });

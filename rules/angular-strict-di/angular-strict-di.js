@@ -6,8 +6,26 @@ module.exports = {
             category: 'Possible Errors',
         },
         fixable: 'code',
+        schema: [
+            {
+                type: "object",
+                properties: {
+                    inlineArray: {
+                        type: "boolean",
+                    }
+                },
+                additionalProperties: false
+            }
+        ],
     },
     create: function(context) {
+        const defaultOptions = {
+            inlineArray: false
+        };
+
+        const [ userOptions ] = context.options;
+        const ruleOptions = { ...defaultOptions, ...userOptions };
+
         const diNodes = [];
         const injectArraysByFunction = {};
 
@@ -79,12 +97,7 @@ module.exports = {
                 || params.some(isCustomInjectable);
         }
 
-        function injectArrayExistsForNode(node) {
-            const functionName = node.id.name;
-            const injectArray = injectArraysByFunction[functionName];
-
-            if (!injectArray) { return false; }
-            
+        function injectArrayMatchesNodeParams(injectArray, node) {
             const params = node.params.map(param => param.name);
             if (!(injectArray.length === params.length)) { return false; }
             
@@ -94,9 +107,30 @@ module.exports = {
             return true;
         }
 
+        function injectArrayExistsForNode(node) {
+            const functionName = node.id.name;
+            const injectArray = injectArraysByFunction[functionName];
+
+            if (!injectArray) { return false; }
+            if (!injectArrayMatchesNodeParams(injectArray, node)) { return false; }
+            return true;
+        }
+
+        function inlineArrayExistsForNode(node) {
+            const hasParentArray = node.parent && node.parent.type === 'ArrayExpression';
+            if (!hasParentArray) { return false; }
+
+            const injectArray = node.parent.elements.slice(0, -1).map(element => element.value);
+            if (!injectArrayMatchesNodeParams(injectArray, node)) { return false; }
+            return true;
+        }
+
         function verifyDependencyInjection() {
             diNodes.forEach(node => {
-                if (!injectArrayExistsForNode(node)) {
+                const isAnnotated = injectArrayExistsForNode(node)
+                    || (ruleOptions.inlineArray && inlineArrayExistsForNode(node));
+                
+                if (!isAnnotated) {
                     report(node);
                 }
             });
