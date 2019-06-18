@@ -39,7 +39,7 @@ module.exports = {
         }
 
         function report(node) {
-            const nodeName = node.id.name;
+            const nodeName = node.id && node.id.name;
             const indent = getIndentationForNode(node);
 
             context.report({
@@ -71,8 +71,9 @@ module.exports = {
 
             const comment = annotateComments.find(comment => {
                 const tokensBetween = sourceCode.getTokensBetween(comment, node);
+                const commentOccursBefore = comment.start <= node.start;
                 const commentBelongsToAnother = tokensBetween.some(token => token.type === 'Keyword' && ['function', 'class'].includes(token.value));
-                return !commentBelongsToAnother;
+                return commentOccursBefore && !commentBelongsToAnother;
             });
 
             return comment;
@@ -108,6 +109,8 @@ module.exports = {
         }
 
         function injectArrayExistsForNode(node) {
+            if (!node.id) { return false; }
+
             const functionName = node.id.name;
             const injectArray = injectArraysByFunction[functionName];
 
@@ -151,7 +154,8 @@ module.exports = {
             // collect all the $inject arrays found in the file
             AssignmentExpression: function(node) {
                 function isInjectArray(node) {
-                    return node.left.property.name === '$inject'
+                    return node.left.property
+                        && node.left.property.name === '$inject'
                         && node.right.type === 'ArrayExpression';
                 }
 
