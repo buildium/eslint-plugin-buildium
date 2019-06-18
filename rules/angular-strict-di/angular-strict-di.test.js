@@ -94,14 +94,60 @@ new RuleTester({
         },
         {
             code: `
-                const route = {
-                    resolve: ['$http', '$q', function routeResolve($http, $q) {
-                    }]
-                }
+            const route = {
+                resolve: ['$http', '$q', function routeResolve($http, $q) {
+                }]
+            }
             `,
             errors: [
                 { message: new RegExp('is not using explicit annotation and cannot be invoked in strict mode') }
-            ]
+            ],
+        },
+        {
+            code: `
+            const route = {
+                resolve: function routeResolve($http, $q) {
+                }
+            }
+            `,
+            options: [{ inlineArray: true }],
+            errors: [
+                { message: new RegExp('is not using explicit annotation and cannot be invoked in strict mode') }
+            ],
+            output: `
+            const route = {
+                resolve: ['$http', '$q', function routeResolve($http, $q) {
+                }]
+            }
+            `
+        },
+        {
+            code: `
+            someModule.controller('MyController', function($scope, greeter) {
+            });
+            `,
+            options: [{ inlineArray: true }],
+            errors: [
+                { message: new RegExp('is not using explicit annotation and cannot be invoked in strict mode') }
+            ],
+            output: `
+            someModule.controller('MyController', ['$scope', 'greeter', function($scope, greeter) {
+            }]);
+            `
+        },
+        {
+            code: `
+            someModule.controller('MyController', function MyController($scope, greeter) {
+            });
+            `,
+            options: [{ inlineArray: true }],
+            errors: [
+                { message: new RegExp('is not using explicit annotation and cannot be invoked in strict mode') }
+            ],
+            output: `
+            someModule.controller('MyController', ['$scope', 'greeter', function MyController($scope, greeter) {
+            }]);
+            `
         }
     ],
 

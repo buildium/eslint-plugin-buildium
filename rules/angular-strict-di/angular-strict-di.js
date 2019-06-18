@@ -47,18 +47,39 @@ module.exports = {
                 message: '{{ nodeName }} is not using explicit annotation and cannot be invoked in strict mode', 
                 data: { nodeName },
                 fix: function(fixer) {
+                    const fixings = [];
                     const params = node.params.map(param => param.name);
                     const quotedParams = params.map(param => `'${param}'`).join(', ');
-                    const injectArray = `\n${indent}${nodeName}.$inject = [${quotedParams}];`;
-                    
-                    const fixings = [];
-                    fixings.push(fixer.insertTextAfter(node, injectArray));
 
-                    const annotateComment = getNgAnnotateComment(node);
-                    if (annotateComment) {
-                        fixings.push(fixer.remove(annotateComment));
+                    function addInjectArrayAfter() {
+                        const injectArray = `\n${indent}${nodeName}.$inject = [${quotedParams}];`;
+                        fixings.push(fixer.insertTextAfter(node, injectArray));
                     }
 
+                    function addInlineInjectArray() {
+                        fixings.push(fixer.insertTextBefore(node, `[${quotedParams}, `));
+                        fixings.push(fixer.insertTextAfter(node, ']'));
+                    }
+
+                    function removeAnnotateComment() {
+                        const annotateComment = getNgAnnotateComment(node);
+                        if (annotateComment) {
+                            fixings.push(fixer.remove(annotateComment));
+                        }
+                    }
+
+                    const inlineInjectRequired = !node.id
+                        || (node.parent && ['Property', 'CallExpression'].includes(node.parent.type));
+                    
+                    if (inlineInjectRequired && !ruleOptions.inlineArray) {
+                        return;
+                    } else if (inlineInjectRequired) {
+                        addInlineInjectArray();
+                    } else {
+                        addInjectArrayAfter();
+                    }
+
+                    removeAnnotateComment();
                     return fixings;
                 }
             });
