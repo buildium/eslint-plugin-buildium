@@ -188,6 +188,15 @@ new RuleTester({
                 }
             `,
             options: [{ inlineArray: true }]
-        }
+        },
+        {
+            code: `
+                const component = {};
+                component.controller = function ValidControllerAssignedToProperty($q) {
+
+                };
+                component.controller.$inject = ['$q'];
+            `
+        },
     ],
 });

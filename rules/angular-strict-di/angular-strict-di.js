@@ -119,6 +119,29 @@ module.exports = {
                 || params.some(isCustomInjectable);
         }
 
+        function isAssignedToProperty(node) {
+            return node.parent 
+                && node.parent.type === 'AssignmentExpression'
+                && node.parent.left.type === 'MemberExpression';
+        }
+
+        function getAssignedPropertyName(node) {
+            let path = [node.property.name];
+            let object = node.object;
+
+            while (object) {
+                if (object.property) {
+                    path.unshift(object.property.name);
+                }
+                if (object.name) {
+                    path.unshift(object.name);
+                }
+                object = object.object;
+            }
+
+            return path.join('.');
+        }
+
         function injectArrayMatchesNodeParams(injectArray, node) {
             const params = node.params.map(param => param.name);
             if (injectArray.length !== params.length) { return false; }
@@ -132,7 +155,9 @@ module.exports = {
         function injectArrayExistsForNode(node) {
             if (!node.id) { return false; }
 
-            const functionName = node.id.name;
+            const functionName = isAssignedToProperty(node) 
+                ? getAssignedPropertyName(node.parent.left) 
+                : node.id.name;
             const injectArray = injectArraysByFunction[functionName];
 
             if (!injectArray) { return false; }
@@ -163,7 +188,7 @@ module.exports = {
         function checkFunctionForDependencyInjection(node) {
             const requiresAnnotation = hasNgAnnotateComment(node) || isAngularFunctionOrProvider(node);
             if (!requiresAnnotation) { return; }
-
+            
             diNodes.push(node);
         }
 
@@ -181,7 +206,10 @@ module.exports = {
                 }
 
                 if (isInjectArray(node)) {
-                    const functionName = node.left.object.name;
+                    const functionName = isAssignedToProperty(node.left) 
+                        ? getAssignedPropertyName(node.left).replace('.$inject', '')
+                        : node.left.object.name;
+
                     injectArraysByFunction[functionName] = node.right.elements.map(element => element.value);
                 }
             },
