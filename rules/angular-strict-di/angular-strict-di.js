@@ -30,16 +30,42 @@ module.exports = {
         const injectArraysByFunction = {};
 
         function getIndentationForNode(node) {
-            const firstTokenInLine = context.getSourceCode()
+            const tokensInLine = context.getSourceCode()
                 .getTokensBefore(node)
-                .filter(token => token.loc.start.line === node.loc.start.line)
-                .pop() || node;
+                .filter(token => token.loc.start.line === node.loc.start.line);
+
+            tokensInLine.sort((t1, t2) => t1.start - t2.start);
+            const firstTokenInLine = tokensInLine.shift() || node;
             const startingColumn = firstTokenInLine.loc.start.column;
+
             return new Array(startingColumn + 1).join(' ');
         }
 
+        function isAssignedToProperty(node) {
+            return node.parent 
+                && node.parent.type === 'AssignmentExpression'
+                && node.parent.left.type === 'MemberExpression';
+        }
+
+        function getAssignedPropertyName(node) {
+            let path = [node.property.name];
+            let object = node.object;
+
+            while (object) {
+                if (object.property) {
+                    path.unshift(object.property.name);
+                }
+                if (object.name) {
+                    path.unshift(object.name);
+                }
+                object = object.object;
+            }
+
+            return path.join('.');
+        }
+
         function report(node) {
-            const nodeName = node.id && node.id.name;
+            const nodeName = isAssignedToProperty(node) ? getAssignedPropertyName(node.parent.left) : node.id && node.id.name;
             const indent = getIndentationForNode(node);
 
             context.report({
@@ -117,29 +143,6 @@ module.exports = {
             const params = node.params.map(param => param.name);
             return params.some(isAngularInjectable) 
                 || params.some(isCustomInjectable);
-        }
-
-        function isAssignedToProperty(node) {
-            return node.parent 
-                && node.parent.type === 'AssignmentExpression'
-                && node.parent.left.type === 'MemberExpression';
-        }
-
-        function getAssignedPropertyName(node) {
-            let path = [node.property.name];
-            let object = node.object;
-
-            while (object) {
-                if (object.property) {
-                    path.unshift(object.property.name);
-                }
-                if (object.name) {
-                    path.unshift(object.name);
-                }
-                object = object.object;
-            }
-
-            return path.join('.');
         }
 
         function injectArrayMatchesNodeParams(injectArray, node) {
