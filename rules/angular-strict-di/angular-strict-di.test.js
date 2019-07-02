@@ -148,7 +148,25 @@ new RuleTester({
             someModule.controller('MyController', ['$scope', 'greeter', function MyController($scope, greeter) {
             }]);
             `
-        }
+        },
+        {
+            code: `
+                const component = {};
+                component.controller = function InvalidControllerAssignedToProperty($q) {
+
+                }
+            `,
+            errors: [
+                { message: new RegExp('is not using explicit annotation and cannot be invoked in strict mode') }
+            ],
+            output: `
+                const component = {};
+                component.controller = function InvalidControllerAssignedToProperty($q) {
+
+                }
+                component.controller.$inject = ['$q'];
+            `,
+        },
     ],
 
     valid: [
@@ -175,9 +193,9 @@ new RuleTester({
             code: `
                 function validMethodNoInjectables(param1, param2) {}
 
-                export function ValidControllerWithInjectable(MyService) {
+                export function ValidControllerWithInjectable2(MyService) {
                 };
-                ValidControllerWithInjectable.$inject = ['MyService'];
+                ValidControllerWithInjectable2.$inject = ['MyService'];
             `,
         },
         {
@@ -188,6 +206,23 @@ new RuleTester({
                 }
             `,
             options: [{ inlineArray: true }]
-        }
+        },
+        {
+            code: `
+                const component = {};
+                component.controller = function ValidControllerAssignedToProperty($q) {
+
+                };
+                component.controller.$inject = ['$q'];
+            `
+        },
+        {
+            code: `
+                const controller = function ValidControllerAssignedToVariable($window) {
+
+                };
+                controller.$inject = ['$window'];
+            `
+        },
     ],
 });

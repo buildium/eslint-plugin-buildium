@@ -30,16 +30,53 @@ module.exports = {
         const injectArraysByFunction = {};
 
         function getIndentationForNode(node) {
-            const firstTokenInLine = context.getSourceCode()
+            const tokensInLine = context.getSourceCode()
                 .getTokensBefore(node)
-                .filter(token => token.loc.start.line === node.loc.start.line)
-                .pop() || node;
+                .filter(token => token.loc.start.line === node.loc.start.line);
+
+            tokensInLine.sort((t1, t2) => t1.start - t2.start);
+            const firstTokenInLine = tokensInLine.shift() || node;
             const startingColumn = firstTokenInLine.loc.start.column;
+
             return new Array(startingColumn + 1).join(' ');
         }
 
+        function getEffectiveNodeName(node) {
+            function isAssignedToProperty(node) {
+                return (node.parent && node.parent.type === 'AssignmentExpression' && node.parent.left.type === 'MemberExpression')
+                    || (node.type === 'AssignmentExpression' && isAssignedToProperty(node.left));
+            }
+
+            function isAssignedToVariable(node) {
+                return node.parent 
+                    && node.parent.type === 'VariableDeclarator';
+            }
+
+            if (isAssignedToVariable(node)) {
+                return node.parent.id.name;
+            } else if (!isAssignedToProperty(node)) {
+                return node.id && node.id.name
+            }
+
+            let relevantNode = node.parent.left || node.left;
+            let path = [relevantNode.property.name];
+            let object = relevantNode.object;
+
+            while (object) {
+                if (object.property) {
+                    path.unshift(object.property.name);
+                }
+                if (object.name) {
+                    path.unshift(object.name);
+                }
+                object = object.object;
+            }
+
+            return path.join('.');
+        }
+
         function report(node) {
-            const nodeName = node.id && node.id.name;
+            const nodeName = getEffectiveNodeName(node);
             const indent = getIndentationForNode(node);
 
             context.report({
@@ -132,7 +169,7 @@ module.exports = {
         function injectArrayExistsForNode(node) {
             if (!node.id) { return false; }
 
-            const functionName = node.id.name;
+            const functionName = getEffectiveNodeName(node);
             const injectArray = injectArraysByFunction[functionName];
 
             if (!injectArray) { return false; }
@@ -163,7 +200,7 @@ module.exports = {
         function checkFunctionForDependencyInjection(node) {
             const requiresAnnotation = hasNgAnnotateComment(node) || isAngularFunctionOrProvider(node);
             if (!requiresAnnotation) { return; }
-
+            
             diNodes.push(node);
         }
 
@@ -181,7 +218,8 @@ module.exports = {
                 }
 
                 if (isInjectArray(node)) {
-                    const functionName = node.left.object.name;
+                    const functionName = getEffectiveNodeName(node).replace('.$inject', '');
+
                     injectArraysByFunction[functionName] = node.right.elements.map(element => element.value);
                 }
             },
