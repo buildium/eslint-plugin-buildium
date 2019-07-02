@@ -152,7 +152,7 @@ new RuleTester({
         {
             code: `
                 const component = {};
-                component.controller = function ValidControllerAssignedToProperty($q) {
+                component.controller = function InvalidControllerAssignedToProperty($q) {
 
                 }
             `,
@@ -161,7 +161,7 @@ new RuleTester({
             ],
             output: `
                 const component = {};
-                component.controller = function ValidControllerAssignedToProperty($q) {
+                component.controller = function InvalidControllerAssignedToProperty($q) {
 
                 }
                 component.controller.$inject = ['$q'];
@@ -193,9 +193,9 @@ new RuleTester({
             code: `
                 function validMethodNoInjectables(param1, param2) {}
 
-                export function ValidControllerWithInjectable(MyService) {
+                export function ValidControllerWithInjectable2(MyService) {
                 };
-                ValidControllerWithInjectable.$inject = ['MyService'];
+                ValidControllerWithInjectable2.$inject = ['MyService'];
             `,
         },
         {
@@ -214,6 +214,14 @@ new RuleTester({
 
                 };
                 component.controller.$inject = ['$q'];
+            `
+        },
+        {
+            code: `
+                const controller = function ValidControllerAssignedToVariable($window) {
+
+                };
+                controller.$inject = ['$window'];
             `
         },
     ],

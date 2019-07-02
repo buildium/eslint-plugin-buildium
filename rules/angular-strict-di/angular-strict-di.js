@@ -41,15 +41,26 @@ module.exports = {
             return new Array(startingColumn + 1).join(' ');
         }
 
-        function isAssignedToProperty(node) {
-            return node.parent 
-                && node.parent.type === 'AssignmentExpression'
-                && node.parent.left.type === 'MemberExpression';
-        }
+        function getEffectiveNodeName(node) {
+            function isAssignedToProperty(node) {
+                return (node.parent && node.parent.type === 'AssignmentExpression' && node.parent.left.type === 'MemberExpression')
+                    || (node.type === 'AssignmentExpression' && isAssignedToProperty(node.left));
+            }
 
-        function getAssignedPropertyName(node) {
-            let path = [node.property.name];
-            let object = node.object;
+            function isAssignedToVariable(node) {
+                return node.parent 
+                    && node.parent.type === 'VariableDeclarator';
+            }
+
+            if (isAssignedToVariable(node)) {
+                return node.parent.id.name;
+            } else if (!isAssignedToProperty(node)) {
+                return node.id && node.id.name
+            }
+
+            let relevantNode = node.parent.left || node.left;
+            let path = [relevantNode.property.name];
+            let object = relevantNode.object;
 
             while (object) {
                 if (object.property) {
@@ -65,7 +76,7 @@ module.exports = {
         }
 
         function report(node) {
-            const nodeName = isAssignedToProperty(node) ? getAssignedPropertyName(node.parent.left) : node.id && node.id.name;
+            const nodeName = getEffectiveNodeName(node);
             const indent = getIndentationForNode(node);
 
             context.report({
@@ -158,9 +169,7 @@ module.exports = {
         function injectArrayExistsForNode(node) {
             if (!node.id) { return false; }
 
-            const functionName = isAssignedToProperty(node) 
-                ? getAssignedPropertyName(node.parent.left) 
-                : node.id.name;
+            const functionName = getEffectiveNodeName(node);
             const injectArray = injectArraysByFunction[functionName];
 
             if (!injectArray) { return false; }
@@ -209,9 +218,7 @@ module.exports = {
                 }
 
                 if (isInjectArray(node)) {
-                    const functionName = isAssignedToProperty(node.left) 
-                        ? getAssignedPropertyName(node.left).replace('.$inject', '')
-                        : node.left.object.name;
+                    const functionName = getEffectiveNodeName(node).replace('.$inject', '');
 
                     injectArraysByFunction[functionName] = node.right.elements.map(element => element.value);
                 }
